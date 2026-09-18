@@ -1,26 +1,80 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Brand tokens — swap these for Bosshardt brand colors later.
+ * Used via Tailwind classes such as bg-brand, text-brand-fg, bg-viewer.
+ */
+@theme {
+  --color-brand: #1f2a37;
+  --color-brand-hover: #2d3b4c;
+  --color-brand-fg: #ffffff;
+
+  --color-canvas: #f7f7f5; /* app background */
+  --color-surface: #ffffff; /* cards, panels */
+  --color-line: #e6e4df; /* subtle borders */
+  --color-ink: #1b1d20; /* primary text */
+  --color-muted: #6b6e73; /* secondary text */
+
+  --color-viewer: #17181b; /* flipbook viewer background */
+  --color-viewer-panel: #26282c;
+
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.04);
+  --shadow-lift: 0 4px 16px rgb(16 24 40 / 0.08);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Flipbook pages ────────────────────────────────────────────────────── */
+
+.flipbook-page {
+  background: #fff;
+  overflow: hidden;
+}
+
+/* Soft shading along the spine in two-page mode (page-flip adds --left/--right). */
+.flipbook--spread .flipbook-page.--left::after,
+.flipbook--spread .flipbook-page.--right::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.flipbook--spread .flipbook-page.--left::after {
+  background: linear-gradient(to left, rgb(0 0 0 / 0.16), rgb(0 0 0 / 0.04) 4%, transparent 12%);
+}
+.flipbook--spread .flipbook-page.--right::after {
+  background: linear-gradient(to right, rgb(0 0 0 / 0.16), rgb(0 0 0 / 0.04) 4%, transparent 12%);
+}
+
+@keyframes page-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.page-shimmer {
+  background: linear-gradient(90deg, #f3f3f1 25%, #fafaf9 50%, #f3f3f1 75%);
+  background-size: 200% 100%;
+  animation: page-shimmer 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-shimmer {
+    animation: none;
+  }
 }
