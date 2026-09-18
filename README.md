@@ -92,3 +92,4 @@ src/
   proxy.ts                Optional DASHBOARD_PASSWORD gate
 supabase/migrations/      Schema, RLS, storage bucket
 ```
+# Bosshardt-Flipbook-Tool
