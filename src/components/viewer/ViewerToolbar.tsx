@@ -17,7 +17,8 @@ interface ViewerToolbarProps {
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   downloadUrl: string | null;
-  onShare: () => void;
+  /** Omit to hide the Share button. */
+  onShare?: () => void;
   dimmed: boolean;
 }
 
@@ -80,7 +81,7 @@ export function ViewerToolbar(props: ViewerToolbarProps) {
         <ZoomIn className="size-[18px]" />
       </ToolButton>
 
-      <Divider />
+      {(props.fullscreenSupported || props.downloadUrl || props.onShare) && <Divider />}
       {props.fullscreenSupported && (
         <ToolButton label={props.isFullscreen ? "Exit fullscreen" : "Fullscreen"} onClick={props.onToggleFullscreen}>
           {props.isFullscreen ? <Minimize className="size-[18px]" /> : <Maximize className="size-[18px]" />}
@@ -96,9 +97,11 @@ export function ViewerToolbar(props: ViewerToolbarProps) {
           <Download className="size-[18px]" />
         </a>
       )}
-      <ToolButton label="Share" onClick={props.onShare}>
-        <Share2 className="size-[18px]" />
-      </ToolButton>
+      {props.onShare && (
+        <ToolButton label="Share" onClick={props.onShare}>
+          <Share2 className="size-[18px]" />
+        </ToolButton>
+      )}
     </div>
   );
 }

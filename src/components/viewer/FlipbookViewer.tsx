@@ -39,7 +39,12 @@ function computeLayout(stage: { width: number; height: number }, aspect: number,
   return { spread, pageWidth, pageHeight };
 }
 
-export function FlipbookViewer({ flipbook }: { flipbook: PublicFlipbook }) {
+/**
+ * `embedded` renders the viewer inside a positioned container (e.g. the
+ * "flipbook ready" preview) instead of taking over the whole screen, and
+ * leaves out the title bar, fullscreen, download and share controls.
+ */
+export function FlipbookViewer({ flipbook, embedded = false }: { flipbook: PublicFlipbook; embedded?: boolean }) {
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [index, setIndex] = useState(0); // page-flip's 0-based index (left page in a spread)
@@ -129,12 +134,24 @@ export function FlipbookViewer({ flipbook }: { flipbook: PublicFlipbook }) {
   }, []);
 
   if (load.status === "loading") {
+    if (embedded) {
+      return (
+        <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-viewer text-white/60">
+          <span className="size-8 animate-spin rounded-full border-2 border-white/15 border-t-white/70" />
+          <span className="text-sm">Loading preview…</span>
+        </div>
+      );
+    }
     return <LoadingPage tone="dark" label="Loading publication…" />;
   }
 
   if (load.status === "error") {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-viewer px-6 text-center text-white">
+      <div
+        className={`flex flex-col items-center justify-center gap-4 bg-viewer px-6 text-center text-white ${
+          embedded ? "absolute inset-0" : "min-h-dvh"
+        }`}
+      >
         <AlertTriangle className="size-8 text-amber-400" strokeWidth={1.5} />
         <div>
           <h1 className="text-lg font-semibold">This publication couldn&apos;t be opened</h1>
@@ -163,14 +180,18 @@ export function FlipbookViewer({ flipbook }: { flipbook: PublicFlipbook }) {
   const zoomed = zoomStep > 0;
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-viewer text-white">
-      <header
-        className={`flex h-12 shrink-0 items-center px-4 transition-opacity duration-500 sm:h-14 sm:px-6 ${
-          idle ? "opacity-40" : "opacity-100"
-        }`}
-      >
-        <h1 className="truncate text-sm font-medium text-white/75">{flipbook.title}</h1>
-      </header>
+    <div
+      className={`${embedded ? "absolute pt-2" : "fixed"} inset-0 flex flex-col overflow-hidden bg-viewer text-white`}
+    >
+      {!embedded && (
+        <header
+          className={`flex h-12 shrink-0 items-center px-4 transition-opacity duration-500 sm:h-14 sm:px-6 ${
+            idle ? "opacity-40" : "opacity-100"
+          }`}
+        >
+          <h1 className="truncate text-sm font-medium text-white/75">{flipbook.title}</h1>
+        </header>
+      )}
 
       <div
         ref={setStageEl}
@@ -215,21 +236,25 @@ export function FlipbookViewer({ flipbook }: { flipbook: PublicFlipbook }) {
           canZoomOut={zoomStep > 0}
           onZoomIn={() => setZoomStep((s) => Math.min(s + 1, ZOOM_STEPS.length - 1))}
           onZoomOut={() => setZoomStep((s) => Math.max(s - 1, 0))}
-          fullscreenSupported={fullscreen.supported}
+          fullscreenSupported={!embedded && fullscreen.supported}
           isFullscreen={fullscreen.isFullscreen}
           onToggleFullscreen={fullscreen.toggle}
-          downloadUrl={`${flipbook.pdf_url}?download=${encodeURIComponent(`${flipbook.title}.pdf`)}`}
-          onShare={() => setShareOpen(true)}
+          downloadUrl={
+            embedded ? null : `${flipbook.pdf_url}?download=${encodeURIComponent(`${flipbook.title}.pdf`)}`
+          }
+          onShare={embedded ? undefined : () => setShareOpen(true)}
           dimmed={idle && !shareOpen}
         />
       </div>
 
-      <ShareModal
-        open={shareOpen}
-        onClose={() => setShareOpen(false)}
-        slug={flipbook.slug}
-        title={flipbook.title}
-      />
+      {!embedded && (
+        <ShareModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          slug={flipbook.slug}
+          title={flipbook.title}
+        />
+      )}
     </div>
   );
 }

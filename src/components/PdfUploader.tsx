@@ -97,7 +97,8 @@ export function PdfUploader() {
         onProgress: setProgress,
       });
       setStage("done");
-      router.push(`/f/${flipbook.slug}`);
+      // Land on the preview + share page rather than straight on the public link.
+      router.push(`/dashboard/${flipbook.slug}?created=1`);
     } catch (e) {
       setError((e as Error).message || "The upload failed. Please try again.");
       setStage("ready");
@@ -218,7 +219,7 @@ export function PdfUploader() {
             {busy && (
               <div>
                 <div className="mb-1.5 flex justify-between text-[13px] text-muted">
-                  <span>{stage === "done" ? "Opening flipbook…" : progress >= 0.97 ? "Finishing up…" : "Uploading…"}</span>
+                  <span>{stage === "done" ? "Preparing preview…" : progress >= 0.97 ? "Finishing up…" : "Uploading…"}</span>
                   <span>{Math.round(progress * 100)}%</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-stone-100">
