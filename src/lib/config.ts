@@ -13,5 +13,10 @@ export const brand = {
 };
 
 export const STORAGE_BUCKET = "flipbooks";
-export const MAX_PDF_BYTES = 100 * 1024 * 1024; // 100 MB
+/**
+ * Largest PDF accepted. Keep in sync with the `flipbooks` bucket's file size
+ * limit in Supabase (Free plan max is 50 MB; Pro can raise it, e.g. to 100 MB).
+ */
+export const MAX_PDF_MB = 50;
+export const MAX_PDF_BYTES = MAX_PDF_MB * 1024 * 1024;
 export const MAX_TITLE_LENGTH = 200;

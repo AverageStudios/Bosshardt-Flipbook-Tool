@@ -2,7 +2,6 @@
 
 import { AlertTriangle, ChevronLeft, ChevronRight, RotateCw } from "lucide-react";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { flipbookUrl } from "@/lib/format";
 import { PageRenderer } from "@/lib/pdf/page-renderer";
 import { openPdf } from "@/lib/pdf/pdfjs";
 import type { PublicFlipbook } from "@/lib/types";
@@ -228,7 +227,7 @@ export function FlipbookViewer({ flipbook }: { flipbook: PublicFlipbook }) {
       <ShareModal
         open={shareOpen}
         onClose={() => setShareOpen(false)}
-        url={flipbookUrl(flipbook.slug)}
+        slug={flipbook.slug}
         title={flipbook.title}
       />
     </div>

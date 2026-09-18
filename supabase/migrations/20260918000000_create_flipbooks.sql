@@ -51,9 +51,9 @@ revoke all on table public.flipbooks from anon, authenticated;
 -- no longer grant them to new tables automatically.
 grant select, insert, update, delete on table public.flipbooks to service_role;
 
--- Storage bucket: public read by URL, 100 MB limit, PDFs + JPEG thumbnails only.
+-- Storage bucket: public read by URL, 50 MB limit (Free-plan max), PDFs + JPEG thumbnails only.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('flipbooks', 'flipbooks', true, 104857600, array['application/pdf', 'image/jpeg'])
+values ('flipbooks', 'flipbooks', true, 52428800, array['application/pdf', 'image/jpeg'])
 on conflict (id) do update
   set public = excluded.public,
       file_size_limit = excluded.file_size_limit,

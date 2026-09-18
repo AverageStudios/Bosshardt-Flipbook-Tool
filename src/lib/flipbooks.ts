@@ -71,33 +71,55 @@ export async function createFlipbook(input: {
     ? bucket.getPublicUrl(thumbnailPath(input.id)).data.publicUrl
     : null;
 
-  // Retry on the (very unlikely) chance of a slug collision.
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const { data, error } = await supabase
-      .from("flipbooks")
-      .insert({
-        id: input.id,
-        title: input.title,
-        slug: createSlug(input.title),
-        pdf_url,
-        storage_path: pdfPath(input.id),
-        page_count: input.pageCount,
-        thumbnail_url,
-      })
-      .select("*")
-      .single();
-    if (!error) return data as Flipbook;
-    if (error.code !== "23505" || !error.message.includes("slug")) {
-      throw new Error(error.message);
+  try {
+    // Retry on the (very unlikely) chance of a slug collision.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data, error } = await supabase
+        .from("flipbooks")
+        .insert({
+          id: input.id,
+          title: input.title,
+          slug: createSlug(input.title),
+          pdf_url,
+          storage_path: pdfPath(input.id),
+          page_count: input.pageCount,
+          thumbnail_url,
+        })
+        .select("*")
+        .single();
+      if (!error) return data as Flipbook;
+      if (error.code === "23505" && !error.message.includes("slug")) {
+        // This id already belongs to a saved flipbook: its files aren't ours to clean up.
+        throw new IdInUseError();
+      }
+      if (error.code !== "23505") throw new Error(error.message);
     }
+    throw new Error("Could not generate a unique link. Please try again.");
+  } catch (error) {
+    // Don't leave orphaned files in Storage when the record couldn't be saved.
+    if (!(error instanceof IdInUseError)) await removeFiles(input.id);
+    throw error;
   }
-  throw new Error("Could not generate a unique link. Please try again.");
+}
+
+class IdInUseError extends Error {
+  constructor() {
+    super("This upload has already been saved.");
+  }
+}
+
+async function removeFiles(id: string) {
+  const { error } = await getSupabaseAdmin()
+    .storage.from(STORAGE_BUCKET)
+    .remove([pdfPath(id), thumbnailPath(id)]);
+  if (error) console.error(`Failed to remove files for flipbook ${id}`, error);
 }
 
 export async function renameFlipbook(id: string, title: string): Promise<Flipbook | null> {
   const { data, error } = await getSupabaseAdmin()
     .from("flipbooks")
-    .update({ title })
+    // Set explicitly so it works whether or not the table has an updated_at trigger.
+    .update({ title, updated_at: new Date().toISOString() })
     .eq("id", id)
     .select("*")
     .maybeSingle();
@@ -105,8 +127,15 @@ export async function renameFlipbook(id: string, title: string): Promise<Flipboo
   return data as Flipbook | null;
 }
 
+/** Deletes the PDF, the thumbnail (if any) and the database record. */
 export async function deleteFlipbook(id: string): Promise<boolean> {
   const supabase = getSupabaseAdmin();
+  // Files first: if this fails the record stays, so the user can retry.
+  const { error: storageError } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .remove([pdfPath(id), thumbnailPath(id)]);
+  if (storageError) throw new Error(storageError.message);
+
   const { data, error } = await supabase
     .from("flipbooks")
     .delete()
@@ -114,7 +143,5 @@ export async function deleteFlipbook(id: string): Promise<boolean> {
     .select("id")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  // Remove files even if the row was already gone, so nothing is orphaned.
-  await supabase.storage.from(STORAGE_BUCKET).remove([pdfPath(id), thumbnailPath(id)]);
   return Boolean(data);
 }

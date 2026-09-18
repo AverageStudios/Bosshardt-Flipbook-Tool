@@ -30,7 +30,8 @@ function uploadToSignedUrl(
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", signedUrl);
     xhr.setRequestHeader("x-upsert", "true");
-    const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    // Public (publishable) key only; the signed URL's token authorises the upload.
+    const apiKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
     if (apiKey) xhr.setRequestHeader("apikey", apiKey);
 
     xhr.upload.onprogress = (event) => {
@@ -56,7 +57,7 @@ function uploadToSignedUrl(
 
     // Same shape supabase-js uses for signed uploads.
     const form = new FormData();
-    form.append("cacheControl", "31536000");
+    form.append("cacheControl", "3600"); // short, so deleted brochures stop being served soon
     form.append("", file);
     xhr.send(form);
   });

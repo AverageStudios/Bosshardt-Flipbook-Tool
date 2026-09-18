@@ -1,4 +1,4 @@
-import { MAX_PDF_BYTES } from "../config";
+import { MAX_PDF_BYTES, MAX_PDF_MB } from "../config";
 import { canvasToBlob, openPdf, PdfLoadError, renderPageToCanvas } from "./pdfjs";
 
 export interface PdfInspection {
@@ -13,7 +13,7 @@ export function validatePdfFile(file: File): string | null {
   const looksLikePdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
   if (!looksLikePdf) return "Only PDF files are supported.";
   if (file.size === 0) return "This file is empty.";
-  if (file.size > MAX_PDF_BYTES) return "This PDF is larger than 100 MB. Please compress it and try again.";
+  if (file.size > MAX_PDF_BYTES) return `This PDF is larger than ${MAX_PDF_MB} MB. Please compress it and try again.`;
   return null;
 }
 

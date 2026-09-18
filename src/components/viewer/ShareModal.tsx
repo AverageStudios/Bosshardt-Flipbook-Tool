@@ -3,12 +3,13 @@
 import { Check, Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { copyText } from "@/lib/clipboard";
+import { flipbookUrl } from "@/lib/format";
 import { Modal } from "../ui/Modal";
 
 interface ShareModalProps {
   open: boolean;
   onClose: () => void;
-  url: string;
+  slug: string;
   title: string;
 }
 
@@ -17,11 +18,11 @@ interface ShareModalProps {
  * (e.g. an <iframe> snippet pointing at /f/[slug]) can be added alongside
  * the link section later without restructuring.
  */
-export function ShareModal({ open, onClose, url, title }: ShareModalProps) {
+export function ShareModal({ open, onClose, slug, title }: ShareModalProps) {
   return (
     <Modal open={open} onClose={onClose} title="Share" tone="dark">
       <p className="-mt-2 mb-4 truncate text-sm text-white/50">{title}</p>
-      <LinkSection url={url} />
+      {open && <LinkSection url={flipbookUrl(slug)} />}
       {/* Future: <EmbedSection url={url} /> */}
     </Modal>
   );

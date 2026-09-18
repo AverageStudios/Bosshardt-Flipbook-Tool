@@ -3,7 +3,7 @@
 import { AlertCircle, FileText, Loader2, UploadCloud, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { MAX_TITLE_LENGTH } from "@/lib/config";
+import { MAX_PDF_MB, MAX_TITLE_LENGTH } from "@/lib/config";
 import { formatBytes } from "@/lib/format";
 import { inspectPdf, validatePdfFile } from "@/lib/pdf/inspect";
 import { titleFromFileName } from "@/lib/slug";
@@ -145,7 +145,7 @@ export function PdfUploader() {
               </div>
               <p className="text-lg font-semibold text-ink">Upload your PDF</p>
               <p className="mt-1.5 text-sm text-muted">Drag and drop a PDF here or click to browse</p>
-              <p className="mt-4 text-xs text-muted">PDF only · up to 100 MB</p>
+              <p className="mt-4 text-xs text-muted">PDF only · up to {MAX_PDF_MB} MB</p>
             </>
           )}
           <input

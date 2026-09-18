@@ -2,16 +2,17 @@ import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Server-only Supabase client using the service-role key.
- * Never import this from a client component: the key bypasses RLS.
+ * Privileged Supabase client using SUPABASE_SECRET_KEY. It bypasses RLS, so it
+ * must only ever run on the server: the `server-only` import above makes the
+ * build fail if a Client Component imports this file.
  */
 let client: SupabaseClient | null = null;
 
+const serverUrl = () => process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+
 export function isSupabaseConfigured(): boolean {
   return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    serverUrl() && process.env.SUPABASE_SECRET_KEY && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   );
 }
 
@@ -27,11 +28,9 @@ export class SupabaseNotConfiguredError extends Error {
 export function getSupabaseAdmin(): SupabaseClient {
   if (!isSupabaseConfigured()) throw new SupabaseNotConfiguredError();
   if (!client) {
-    client = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false, autoRefreshToken: false } },
-    );
+    client = createClient(serverUrl()!, process.env.SUPABASE_SECRET_KEY!, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
   }
   return client;
 }

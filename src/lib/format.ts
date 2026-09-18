@@ -12,11 +12,10 @@ export function formatDate(iso: string): string {
   });
 }
 
-/** Absolute public URL for a flipbook, usable on the client. */
+/**
+ * Absolute public URL for a flipbook. Browser-only: uses whatever domain the app
+ * is being served from (localhost, a Vercel preview, production), never a hardcoded one.
+ */
 export function flipbookUrl(slug: string): string {
-  const origin =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : (process.env.NEXT_PUBLIC_SITE_URL ?? "");
-  return `${origin}/f/${slug}`;
+  return `${window.location.origin}/f/${slug}`;
 }
