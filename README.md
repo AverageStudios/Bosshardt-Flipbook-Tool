@@ -95,3 +95,4 @@ supabase/migrations/      Schema, RLS, storage bucket
 # Bosshardt-Flipbook-Tool
 # Bosshardt-Flipbook-Tool
 # Bosshardt-Flipbook-Tool
+# Bosshardt-Flipbook-Tool
