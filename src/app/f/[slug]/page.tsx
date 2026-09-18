@@ -4,7 +4,7 @@ import { cache } from "react";
 import { SetupNotice } from "@/components/SetupNotice";
 import { FlipbookViewer } from "@/components/viewer/FlipbookViewer";
 import { getFlipbookBySlug } from "@/lib/flipbooks";
-import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { isSupabaseConfigured, missingServerEnv } from "@/lib/supabase/server";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -35,7 +35,7 @@ export default async function FlipbookPage({ params }: Props) {
   if (!isSupabaseConfigured()) {
     return (
       <main className="grid min-h-dvh place-items-center bg-viewer p-6">
-        <SetupNotice />
+        <SetupNotice missing={missingServerEnv()} />
       </main>
     );
   }

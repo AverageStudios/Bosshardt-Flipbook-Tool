@@ -7,7 +7,9 @@ import { MAX_PDF_MB, MAX_TITLE_LENGTH } from "@/lib/config";
 import { formatBytes } from "@/lib/format";
 import { inspectPdf, validatePdfFile } from "@/lib/pdf/inspect";
 import { titleFromFileName } from "@/lib/slug";
+import { missingPublicEnv } from "@/lib/supabase/public";
 import { createFlipbookFromPdf } from "@/lib/upload";
+import { SetupNotice } from "./SetupNotice";
 import { buttonClass } from "./ui/button";
 
 type Stage = "idle" | "inspecting" | "ready" | "uploading" | "done";
@@ -104,6 +106,10 @@ export function PdfUploader() {
 
   const busy = stage === "uploading" || stage === "done";
   const shownFile = selected?.file ?? pendingFile;
+
+  // Browser-side check: only the public variables, which this bundle was built with.
+  const missingPublic = missingPublicEnv();
+  if (missingPublic.length > 0) return <SetupNotice missing={missingPublic} />;
 
   return (
     <div className="space-y-6">

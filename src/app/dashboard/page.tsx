@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { FlipbookGrid } from "@/components/dashboard/FlipbookGrid";
 import { SetupNotice } from "@/components/SetupNotice";
 import { listFlipbooks } from "@/lib/flipbooks";
-import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { missingServerEnv } from "@/lib/supabase/server";
 import type { Flipbook } from "@/lib/types";
 
 export const metadata: Metadata = { title: "My Flipbooks" };
@@ -12,7 +12,8 @@ export const metadata: Metadata = { title: "My Flipbooks" };
 export default async function DashboardPage() {
   await connection(); // always render with fresh data
 
-  const configured = isSupabaseConfigured();
+  const missing = missingServerEnv();
+  const configured = missing.length === 0;
   let flipbooks: Flipbook[] = [];
   let loadError: string | null = null;
   if (configured) {
@@ -38,7 +39,7 @@ export default async function DashboardPage() {
         </div>
 
         {!configured ? (
-          <SetupNotice />
+          <SetupNotice missing={missing} />
         ) : loadError ? (
           <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">{loadError}</div>
         ) : (

@@ -5,12 +5,13 @@ import { connection } from "next/server";
 import { AppHeader } from "@/components/AppHeader";
 import { PdfUploader } from "@/components/PdfUploader";
 import { SetupNotice } from "@/components/SetupNotice";
-import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { missingServerEnv } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Create a Flipbook" };
 
 export default async function NewFlipbookPage() {
   await connection(); // read env at request time, not build time
+  const missing = missingServerEnv();
   return (
     <div className="min-h-dvh">
       <AppHeader showNewButton={false} />
@@ -23,7 +24,7 @@ export default async function NewFlipbookPage() {
         <p className="mt-1.5 mb-8 text-sm text-muted">
           Upload a PDF and get a shareable, page-turning flipbook link in seconds.
         </p>
-        {isSupabaseConfigured() ? <PdfUploader /> : <SetupNotice />}
+        {missing.length === 0 ? <PdfUploader /> : <SetupNotice missing={missing} />}
       </main>
     </div>
   );

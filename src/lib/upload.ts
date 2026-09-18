@@ -1,3 +1,4 @@
+import { publicSupabaseConfig } from "./supabase/public";
 import type { Flipbook } from "./types";
 
 async function readError(response: Response, fallback: string): Promise<string> {
@@ -31,7 +32,7 @@ function uploadToSignedUrl(
     xhr.open("PUT", signedUrl);
     xhr.setRequestHeader("x-upsert", "true");
     // Public (publishable) key only; the signed URL's token authorises the upload.
-    const apiKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    const apiKey = publicSupabaseConfig.publishableKey;
     if (apiKey) xhr.setRequestHeader("apikey", apiKey);
 
     xhr.upload.onprogress = (event) => {
