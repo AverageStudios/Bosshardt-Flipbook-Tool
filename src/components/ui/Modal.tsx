@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   open: boolean;
@@ -36,7 +37,10 @@ export function Modal({ open, title, onClose, children, tone = "light" }: ModalP
   if (!open) return null;
 
   const dark = tone === "dark";
-  return (
+  // Rendered into <body>: a `position: sticky` or backdrop-filtered ancestor
+  // (the dashboard sidebar and header are both) creates a stacking context
+  // that would otherwise trap this overlay behind the page content.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
       <div
         className={`absolute inset-0 ${dark ? "bg-black/60" : "bg-stone-900/30"} backdrop-blur-[2px]`}
@@ -70,6 +74,7 @@ export function Modal({ open, title, onClose, children, tone = "light" }: ModalP
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

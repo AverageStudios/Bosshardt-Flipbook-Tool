@@ -1,8 +1,9 @@
 import "server-only";
+import { cache } from "react";
 import { STORAGE_BUCKET } from "./config";
 import { createSlug } from "./slug";
 import { getSupabaseAdmin } from "./supabase/server";
-import type { Flipbook, PublicFlipbook } from "./types";
+import type { Flipbook, FlipbookNavItem, PublicFlipbook } from "./types";
 
 /** Storage layout: flipbooks/{flipbook_id}/document.pdf and thumbnail.jpg */
 export const pdfPath = (id: string) => `${id}/document.pdf`;
@@ -27,6 +28,16 @@ export async function listFlipbooks(options: { folderId?: string; limit?: number
   if (error) throw new Error(error.message);
   return data as Flipbook[];
 }
+
+/** Just enough of every flipbook to draw the sidebar tree. Deduped per request. */
+export const listFlipbookNav = cache(async (): Promise<FlipbookNavItem[]> => {
+  const { data, error } = await getSupabaseAdmin()
+    .from("flipbooks")
+    .select("id, title, slug, folder_id")
+    .order("title", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data as FlipbookNavItem[];
+});
 
 export async function getFlipbookBySlug(slug: string): Promise<PublicFlipbook | null> {
   if (!SLUG_RE.test(slug) || slug.length > 100) return null;

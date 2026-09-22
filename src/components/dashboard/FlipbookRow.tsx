@@ -29,7 +29,7 @@ export function FlipbookRow({ flipbook, folderName, onRename, onMove, onDelete }
       {...flipbookDragProps(flipbook)}
       className="flex items-center gap-3 px-3 py-2.5 transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-stone-50 sm:gap-4 sm:px-4 sm:first:rounded-t-none"
     >
-      <Link href={href} aria-label={`Open ${flipbook.title}`} className="shrink-0">
+      <Link href={href} draggable={false} aria-label={`Open ${flipbook.title}`} className="shrink-0">
         <span className="grid h-12 w-9 place-items-center overflow-hidden rounded-[3px] bg-stone-100 text-muted shadow-card">
           {flipbook.thumbnail_url && !thumbFailed ? (
             // eslint-disable-next-line @next/next/no-img-element -- remote Supabase image
@@ -48,7 +48,12 @@ export function FlipbookRow({ flipbook, folderName, onRename, onMove, onDelete }
       </Link>
 
       <div className="min-w-0 flex-1">
-        <Link href={href} className="block truncate text-sm font-medium text-ink hover:underline" title={flipbook.title}>
+        <Link
+          href={href}
+          draggable={false}
+          className="block truncate text-sm font-medium text-ink hover:underline"
+          title={flipbook.title}
+        >
           {flipbook.title}
         </Link>
         <p className="truncate text-[13px] text-muted sm:hidden">

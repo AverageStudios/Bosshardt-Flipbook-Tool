@@ -1,8 +1,9 @@
 import { connection } from "next/server";
 import { DashboardChrome } from "@/components/dashboard/DashboardChrome";
+import { listFlipbookNav } from "@/lib/flipbooks";
 import { listFolders } from "@/lib/folders";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
-import type { Folder } from "@/lib/types";
+import type { FlipbookNavItem, Folder } from "@/lib/types";
 
 /**
  * Sidebar shell around the browsing views. The flipbook preview page at
@@ -12,14 +13,19 @@ export default async function DashboardBrowseLayout({ children }: { children: Re
   await connection(); // always render with fresh data
 
   let folders: Folder[] = [];
+  let flipbooks: FlipbookNavItem[] = [];
   if (isSupabaseConfigured()) {
     try {
-      folders = await listFolders();
+      [folders, flipbooks] = await Promise.all([listFolders(), listFlipbookNav()]);
     } catch (error) {
-      // The page below surfaces the failure; the sidebar just shows no folders.
-      console.error("Failed to load folders", error);
+      // The page below surfaces the failure; the sidebar just shows an empty tree.
+      console.error("Failed to load the sidebar tree", error);
     }
   }
 
-  return <DashboardChrome folders={folders}>{children}</DashboardChrome>;
+  return (
+    <DashboardChrome folders={folders} flipbooks={flipbooks}>
+      {children}
+    </DashboardChrome>
+  );
 }

@@ -19,6 +19,9 @@ export interface Folder {
   updated_at: string;
 }
 
+/** The slice of a flipbook the sidebar tree needs. */
+export type FlipbookNavItem = Pick<Flipbook, "id" | "title" | "slug" | "folder_id">;
+
 /** Fields that are safe to send to the public viewer. */
 export type PublicFlipbook = Pick<
   Flipbook,

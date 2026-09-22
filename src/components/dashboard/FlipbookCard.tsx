@@ -143,6 +143,7 @@ export function FlipbookCard({ flipbook, folderName, onRename, onMove, onDelete 
     >
       <Link
         href={href}
+        draggable={false}
         className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-t-xl bg-stone-100 px-6 pt-6"
         aria-label={`Open ${flipbook.title}`}
       >
@@ -209,7 +210,7 @@ export function FlipbookCard({ flipbook, folderName, onRename, onMove, onDelete 
         </div>
 
         <div className="mt-auto flex gap-2">
-          <Link href={href} className={buttonClass("primary", "sm", "flex-1")}>
+          <Link href={href} draggable={false} className={buttonClass("primary", "sm", "flex-1")}>
             Open
           </Link>
           <button type="button" onClick={handleCopy} className={buttonClass("secondary", "sm", "flex-1")}>
