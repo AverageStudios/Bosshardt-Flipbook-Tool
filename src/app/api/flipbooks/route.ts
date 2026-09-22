@@ -9,15 +9,18 @@ export async function POST(request: Request) {
   const id = typeof body?.id === "string" ? body.id : "";
   const title = cleanTitle(body?.title);
   const pageCount = Number(body?.pageCount);
+  // Optional: set when the upload was started from inside a folder.
+  const folderId = typeof body?.folderId === "string" ? body.folderId : null;
 
   if (!isUuid(id)) return jsonError("Invalid upload reference.", 400);
+  if (folderId !== null && !isUuid(folderId)) return jsonError("Folder not found.", 400);
   if (!title) return jsonError("Please enter a title (up to 200 characters).", 400);
   if (!Number.isInteger(pageCount) || pageCount < 1 || pageCount > 5000) {
     return jsonError("Invalid page count.", 400);
   }
 
   try {
-    const flipbook = await createFlipbook({ id, title, pageCount });
+    const flipbook = await createFlipbook({ id, title, pageCount, folderId });
     return NextResponse.json({ flipbook }, { status: 201 });
   } catch (error) {
     return handleApiError(error, "Could not save the flipbook. Please try again.");

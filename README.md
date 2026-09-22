@@ -4,7 +4,8 @@ Turn PDF brochures, offering memorandums and market reports into page-turning on
 
 **PDF → Upload → Flipbook → Shareable Link**
 
-- `/dashboard`: your flipbooks (open, copy link, rename, delete)
+- `/dashboard`: your flipbooks (open, copy link, rename, move to folder, delete), with a folder sidebar
+- `/dashboard/recent`, `/dashboard/folder/[id]`: the Recent view and a single folder
 - `/new`: upload a PDF (drag & drop, preview, title)
 - `/f/[slug]`: the public viewer (no login needed)
 
@@ -18,7 +19,10 @@ Built with Next.js (App Router), TypeScript, Tailwind CSS, PDF.js, page-flip, Su
 2. Open **SQL Editor**, paste in `supabase/migrations/20260918000000_create_flipbooks.sql` and run it.
    It creates the `flipbooks` table (RLS on, no public access) and the **public** `flipbooks` storage bucket
    (50 MB limit, PDF/JPEG only). If you created these yourself, make sure the bucket is set to **Public**.
-3. **Upload size:** the Free plan caps uploads at 50 MB. To allow larger PDFs, upgrade, raise the global limit
+3. Then run `supabase/migrations/20260922000000_create_folders.sql`. It adds the `folders` table (same
+   RLS model) and the nullable `flipbooks.folder_id` column used by the dashboard sidebar. Deleting a
+   folder never deletes its flipbooks — the foreign key is `ON DELETE SET NULL`.
+4. **Upload size:** the Free plan caps uploads at 50 MB. To allow larger PDFs, upgrade, raise the global limit
    under **Storage → Settings** and the bucket's limit, then change `MAX_PDF_MB` in `src/lib/config.ts`.
 
 ### 2. Environment variables
@@ -77,19 +81,23 @@ With Docker running: `supabase start`. This project's CLI stack uses ports **545
 ```
 src/
   app/
-    dashboard/            My Flipbooks
-    new/                  Create a Flipbook
+    dashboard/(browse)/   Sidebar shell: All Flipbooks, Recent, folder/[id]
+    dashboard/[slug]/     Preview + share page for a new flipbook
+    new/                  Create a Flipbook (?folder=<id> files it on upload)
     f/[slug]/             Public viewer (+ not-found, error)
-    api/flipbooks/        prepare (signed upload URLs), create, rename, delete
+    api/flipbooks/        prepare (signed upload URLs), create, rename, move, delete
+    api/folders/          list, create, rename, delete
   components/
     PdfUploader.tsx
-    dashboard/            FlipbookGrid, FlipbookCard
+    dashboard/            DashboardChrome, DashboardSidebar, FlipbookBrowser,
+                          FlipbookCard, FlipbookRow
     viewer/               FlipbookViewer, FlipbookBook (page-flip), FlipbookPage,
                           ViewerToolbar, ShareModal, hooks
     ui/                   Modal, button styles
   lib/
     pdf/                  PDF.js loading, page renderer + cache, file inspection
     flipbooks.ts          Server-side data access
+    folders.ts            Server-side folder access
     upload.ts             Client upload flow
 supabase/migrations/      Schema, RLS, storage bucket
 ```

@@ -13,11 +13,17 @@ export const isUuid = (value: string) => UUID_RE.test(value);
 
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-export async function listFlipbooks(): Promise<Flipbook[]> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("flipbooks")
-    .select("*")
-    .order("created_at", { ascending: false });
+/**
+ * Newest first. Pass a folder id to list only that folder's flipbooks; the
+ * filter runs in Postgres (indexed on folder_id) so switching folders never
+ * loads more rows than it shows.
+ */
+export async function listFlipbooks(options: { folderId?: string; limit?: number } = {}): Promise<Flipbook[]> {
+  let query = getSupabaseAdmin().from("flipbooks").select("*");
+  if (options.folderId) query = query.eq("folder_id", options.folderId);
+  query = query.order("created_at", { ascending: false });
+  if (options.limit) query = query.limit(options.limit);
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data as Flipbook[];
 }
@@ -55,6 +61,8 @@ export async function createFlipbook(input: {
   id: string;
   title: string;
   pageCount: number;
+  /** Set when the upload was started from inside a folder. */
+  folderId?: string | null;
 }): Promise<Flipbook> {
   const supabase = getSupabaseAdmin();
   const bucket = supabase.storage.from(STORAGE_BUCKET);
@@ -71,9 +79,11 @@ export async function createFlipbook(input: {
     ? bucket.getPublicUrl(thumbnailPath(input.id)).data.publicUrl
     : null;
 
+  let folder_id = input.folderId ?? null;
+
   try {
     // Retry on the (very unlikely) chance of a slug collision.
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 4; attempt++) {
       const { data, error } = await supabase
         .from("flipbooks")
         .insert({
@@ -84,10 +94,17 @@ export async function createFlipbook(input: {
           storage_path: pdfPath(input.id),
           page_count: input.pageCount,
           thumbnail_url,
+          folder_id,
         })
         .select("*")
         .single();
       if (!error) return data as Flipbook;
+      if (error.code === "23503" && folder_id) {
+        // The folder was deleted mid-upload. Save the flipbook unfiled rather
+        // than throwing away a PDF the user just waited for.
+        folder_id = null;
+        continue;
+      }
       if (error.code === "23505" && !error.message.includes("slug")) {
         // This id already belongs to a saved flipbook: its files aren't ours to clean up.
         throw new IdInUseError();
@@ -120,6 +137,22 @@ export async function renameFlipbook(id: string, title: string): Promise<Flipboo
     .from("flipbooks")
     // Set explicitly so it works whether or not the table has an updated_at trigger.
     .update({ title, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("*")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data as Flipbook | null;
+}
+
+/**
+ * Moves a flipbook into a folder, or out of every folder when `folderId` is
+ * null. Only the dashboard grouping changes: the slug, share link, PDF and
+ * thumbnail are untouched.
+ */
+export async function moveFlipbook(id: string, folderId: string | null): Promise<Flipbook | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("flipbooks")
+    .update({ folder_id: folderId, updated_at: new Date().toISOString() })
     .eq("id", id)
     .select("*")
     .maybeSingle();

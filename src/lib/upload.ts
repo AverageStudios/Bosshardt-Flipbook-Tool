@@ -69,9 +69,11 @@ export async function createFlipbookFromPdf(options: {
   cover: Blob | null;
   title: string;
   pageCount: number;
+  /** Folder the upload was started from, if any. */
+  folderId?: string | null;
   onProgress: (fraction: number) => void;
 }): Promise<Flipbook> {
-  const { file, cover, title, pageCount, onProgress } = options;
+  const { file, cover, title, pageCount, folderId, onProgress } = options;
 
   const prepared = await postJson<{ id: string; pdfUploadUrl: string; thumbnailUploadUrl: string }>(
     "/api/flipbooks/prepare",
@@ -95,7 +97,7 @@ export async function createFlipbookFromPdf(options: {
 
   const { flipbook } = await postJson<{ flipbook: Flipbook }>(
     "/api/flipbooks",
-    { id: prepared.id, title, pageCount },
+    { id: prepared.id, title, pageCount, folderId: folderId ?? null },
     "Could not save the flipbook.",
   );
   onProgress(1);

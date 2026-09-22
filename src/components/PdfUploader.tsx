@@ -21,7 +21,7 @@ interface Selected {
   previewUrl: string;
 }
 
-export function PdfUploader() {
+export function PdfUploader({ folderId }: { folderId?: string | null }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [stage, setStage] = useState<Stage>("idle");
@@ -94,6 +94,7 @@ export function PdfUploader() {
         cover: selected.cover,
         title: cleanTitle,
         pageCount: selected.pageCount,
+        folderId,
         onProgress: setProgress,
       });
       setStage("done");

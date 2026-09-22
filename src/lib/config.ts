@@ -20,3 +20,5 @@ export const STORAGE_BUCKET = "flipbooks";
 export const MAX_PDF_MB = 50;
 export const MAX_PDF_BYTES = MAX_PDF_MB * 1024 * 1024;
 export const MAX_TITLE_LENGTH = 200;
+/** Keep in sync with the `folders.name` check constraint in the migration. */
+export const MAX_FOLDER_NAME_LENGTH = 100;

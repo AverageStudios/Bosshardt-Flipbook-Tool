@@ -1,40 +1,133 @@
 "use client";
 
-import { Check, FileText, Link2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Check, ExternalLink, FileText, FolderInput, Link2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { copyText } from "@/lib/clipboard";
 import { flipbookUrl, formatDate } from "@/lib/format";
 import type { Flipbook } from "@/lib/types";
 import { buttonClass } from "../ui/button";
+import { FLIPBOOK_DRAG_TYPE } from "./nav";
 
-interface FlipbookCardProps {
-  flipbook: Flipbook;
+export interface FlipbookActions {
   onRename: (flipbook: Flipbook) => void;
+  onMove: (flipbook: Flipbook) => void;
   onDelete: (flipbook: Flipbook) => void;
 }
 
-export function FlipbookCard({ flipbook, onRename, onDelete }: FlipbookCardProps) {
+interface FlipbookCardProps extends FlipbookActions {
+  flipbook: Flipbook;
+  /** Shown subtly under the title when browsing across folders. */
+  folderName?: string | null;
+}
+
+/** Closes a popover menu on outside click or Escape. */
+export function useMenuDismiss(open: boolean, close: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (event: MouseEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent ? event.key === "Escape" : !ref.current?.contains(event.target as Node)) {
+        close();
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("keydown", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", handler);
+    };
+  }, [open, close]);
+  return ref;
+}
+
+/** Shared menu items so the grid card and the list row stay in step. */
+export function FlipbookMenuItems({
+  flipbook,
+  href,
+  onPick,
+  onRename,
+  onMove,
+  onDelete,
+}: FlipbookActions & { flipbook: Flipbook; href: string; onPick: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const item = "flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink hover:bg-stone-50";
+  return (
+    <>
+      <Link role="menuitem" href={href} onClick={onPick} className={item}>
+        <ExternalLink className="size-3.5 text-muted" /> Open
+      </Link>
+      <button
+        role="menuitem"
+        type="button"
+        onClick={async () => {
+          if (await copyText(flipbookUrl(flipbook.slug))) {
+            setCopied(true);
+            setTimeout(onPick, 900);
+          } else {
+            onPick();
+          }
+        }}
+        className={item}
+      >
+        {copied ? <Check className="size-3.5 text-emerald-600" /> : <Link2 className="size-3.5 text-muted" />}
+        {copied ? "Copied" : "Copy Link"}
+      </button>
+      <button
+        role="menuitem"
+        type="button"
+        onClick={() => {
+          onPick();
+          onRename(flipbook);
+        }}
+        className={item}
+      >
+        <Pencil className="size-3.5 text-muted" /> Rename
+      </button>
+      <button
+        role="menuitem"
+        type="button"
+        onClick={() => {
+          onPick();
+          onMove(flipbook);
+        }}
+        className={item}
+      >
+        <FolderInput className="size-3.5 text-muted" /> Move to Folder
+      </button>
+      <button
+        role="menuitem"
+        type="button"
+        onClick={() => {
+          onPick();
+          onDelete(flipbook);
+        }}
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+      >
+        <Trash2 className="size-3.5" /> Delete
+      </button>
+    </>
+  );
+}
+
+/** Marks a card as the payload of a drag onto a sidebar folder. */
+export function flipbookDragProps(flipbook: Flipbook) {
+  return {
+    draggable: true,
+    onDragStart: (event: React.DragEvent) => {
+      event.dataTransfer.setData(FLIPBOOK_DRAG_TYPE, flipbook.id);
+      event.dataTransfer.setData("text/plain", flipbook.title);
+      event.dataTransfer.effectAllowed = "move";
+    },
+  };
+}
+
+export function FlipbookCard({ flipbook, folderName, onRename, onMove, onDelete }: FlipbookCardProps) {
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [thumbFailed, setThumbFailed] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useMenuDismiss(menuOpen, () => setMenuOpen(false));
   const href = `/f/${flipbook.slug}`;
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const close = (event: MouseEvent | KeyboardEvent) => {
-      if (event instanceof KeyboardEvent ? event.key === "Escape" : !menuRef.current?.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [menuOpen]);
 
   async function handleCopy() {
     if (await copyText(flipbookUrl(flipbook.slug))) {
@@ -44,10 +137,13 @@ export function FlipbookCard({ flipbook, onRename, onDelete }: FlipbookCardProps
   }
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-card transition-shadow hover:shadow-lift">
+    <article
+      {...flipbookDragProps(flipbook)}
+      className="group flex flex-col rounded-xl border border-line bg-surface shadow-card transition-shadow hover:shadow-lift"
+    >
       <Link
         href={href}
-        className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-stone-100 px-6 pt-6"
+        className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-t-xl bg-stone-100 px-6 pt-6"
         aria-label={`Open ${flipbook.title}`}
       >
         {flipbook.thumbnail_url && !thumbFailed ? (
@@ -56,6 +152,7 @@ export function FlipbookCard({ flipbook, onRename, onDelete }: FlipbookCardProps
             src={flipbook.thumbnail_url}
             alt=""
             loading="lazy"
+            draggable={false}
             onError={() => setThumbFailed(true)}
             className="h-full w-auto max-w-full self-end rounded-t-[3px] object-contain object-bottom shadow-[0_2px_12px_rgb(0_0_0/0.14)] transition-transform duration-300 group-hover:-translate-y-1"
           />
@@ -75,6 +172,11 @@ export function FlipbookCard({ flipbook, onRename, onDelete }: FlipbookCardProps
             <p className="mt-0.5 text-[13px] text-muted">
               {formatDate(flipbook.created_at)} · {flipbook.page_count} {flipbook.page_count === 1 ? "page" : "pages"}
             </p>
+            {folderName && (
+              <p className="mt-0.5 truncate text-[12px] text-muted/80" title={folderName}>
+                {folderName}
+              </p>
+            )}
           </div>
 
           <div className="relative" ref={menuRef}>
@@ -91,30 +193,16 @@ export function FlipbookCard({ flipbook, onRename, onDelete }: FlipbookCardProps
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-lift"
+                className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-lift"
               >
-                <button
-                  role="menuitem"
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onRename(flipbook);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink hover:bg-stone-50"
-                >
-                  <Pencil className="size-3.5 text-muted" /> Rename
-                </button>
-                <button
-                  role="menuitem"
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onDelete(flipbook);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 className="size-3.5" /> Delete
-                </button>
+                <FlipbookMenuItems
+                  flipbook={flipbook}
+                  href={href}
+                  onPick={() => setMenuOpen(false)}
+                  onRename={onRename}
+                  onMove={onMove}
+                  onDelete={onDelete}
+                />
               </div>
             )}
           </div>
