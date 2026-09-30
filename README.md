@@ -80,6 +80,10 @@ The embed uses the same record and PDF as `/f/[slug]`, fits itself to the iframe
 wide enough, single pages when narrow), and keeps page turning, zoom, fullscreen and an "open in new tab" link.
 `?page=5` opens it at a given page.
 
+The generated code always points at `https://bosshardtflipbooks.com`, even when the dashboard is opened from a
+vercel.app or preview address (set `NEXT_PUBLIC_EMBED_ORIGIN` to change that). The dialog's preview uses the
+address you're on.
+
 Framing is controlled in `next.config.ts` with a `Content-Security-Policy: frame-ancestors` header:
 
 - `/embed/*` and `/f/*`: only this app itself and the sites in `EMBED_ALLOWED_ORIGINS`.

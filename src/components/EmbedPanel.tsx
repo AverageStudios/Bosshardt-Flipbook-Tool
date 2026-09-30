@@ -3,7 +3,7 @@
 import { Check, Code2, Eye } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { copyText } from "@/lib/clipboard";
-import { DEFAULT_EMBED_SIZE, EMBED_SIZES, embedCode, embedUrl, type EmbedSize } from "@/lib/embed";
+import { DEFAULT_EMBED_SIZE, EMBED_ORIGIN, EMBED_SIZES, embedCode, embedUrl, type EmbedSize } from "@/lib/embed";
 import { useElementSize } from "./viewer/hooks";
 
 const noSubscribe = () => () => {};
@@ -35,7 +35,8 @@ const tones = {
 
 /** Size options, the iframe snippet, Copy Embed Code and an on-demand preview. */
 export function EmbedPanel({ slug, title, tone }: { slug: string; title: string; tone: "light" | "dark" }) {
-  // Built from the domain the app is served on (production, a preview, localhost), never hardcoded.
+  // The preview frames the current site: a vercel.app page may not frame the production
+  // domain (and vice versa), while the copied code always points at production.
   const origin = useSyncExternalStore(noSubscribe, () => window.location.origin, () => "");
   const [size, setSize] = useState<EmbedSize>(DEFAULT_EMBED_SIZE);
   const [copied, setCopied] = useState(false);
@@ -43,7 +44,8 @@ export function EmbedPanel({ slug, title, tone }: { slug: string; title: string;
   const [showPreview, setShowPreview] = useState(false);
   const t = tones[tone];
 
-  const src = origin ? embedUrl(origin, slug) : "";
+  const src = embedUrl(EMBED_ORIGIN, slug);
+  const previewSrc = origin ? embedUrl(origin, slug) : "";
   const code = embedCode({ src, title, size });
 
   async function handleCopy() {
@@ -101,7 +103,7 @@ export function EmbedPanel({ slug, title, tone }: { slug: string; title: string;
         type="button"
         autoFocus
         onClick={handleCopy}
-        disabled={!src}
+
         className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg text-[15px] font-medium transition-colors disabled:opacity-50 ${t.primary}`}
       >
         {copied ? <Check className="size-4" /> : <Code2 className="size-4" />}
@@ -113,8 +115,8 @@ export function EmbedPanel({ slug, title, tone }: { slug: string; title: string;
 
       <div>
         <p className={`mb-2 text-xs font-medium tracking-wide uppercase ${t.muted}`}>Preview</p>
-        {showPreview && src ? (
-          <EmbedPreview src={src} title={title} height={EMBED_SIZES[size].height} frameClass={t.frame} />
+        {showPreview && previewSrc ? (
+          <EmbedPreview src={previewSrc} title={title} height={EMBED_SIZES[size].height} frameClass={t.frame} />
         ) : (
           // Loaded on request so opening this panel doesn't download and render the PDF a second time.
           <button

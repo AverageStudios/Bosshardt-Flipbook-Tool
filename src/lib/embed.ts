@@ -7,6 +7,16 @@
  * the generated URL, so /embed/[slug] stays the one entry point.
  */
 
+/**
+ * Domain the generated embed code points at, whichever address staff open the
+ * dashboard from (a vercel.app URL, a preview, localhost). Override with
+ * NEXT_PUBLIC_EMBED_ORIGIN; read at build time, so redeploy after changing it.
+ */
+export const EMBED_ORIGIN = (process.env.NEXT_PUBLIC_EMBED_ORIGIN?.trim() || "https://bosshardtflipbooks.com").replace(
+  /\/+$/,
+  "",
+);
+
 export const EMBED_SIZES = {
   responsive: { label: "Responsive", height: 700, note: "Recommended" },
   compact: { label: "Compact", height: 550, note: null },
