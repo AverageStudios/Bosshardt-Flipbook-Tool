@@ -279,6 +279,7 @@ export function FlipbookViewer({
           onClose={() => setShareOpen(false)}
           slug={flipbook.slug}
           title={flipbook.title}
+          thumbnailUrl={flipbook.thumbnail_url}
         />
       )}
     </div>

@@ -75,7 +75,8 @@ With Docker running: `supabase start`. This project's CLI stack uses ports **545
 ## Website embeds
 
 **Share → Embed on Website** (in the viewer, or on a flipbook's dashboard page) gives an `<iframe>` snippet
-pointing at `/embed/[slug]`, in three heights (Responsive 700px, Compact 550px, Large 850px; always 100% wide).
+pointing at `/embed/[slug]`, always 100% wide, in two sizes: **Default** (600px tall, one page at a time) and
+**Large** (a two-page spread; its height follows its width via CSS `aspect-ratio`, worked out from the page shape).
 The embed uses the same record and PDF as `/f/[slug]`, fits itself to the iframe (two-page spread when
 wide enough, single pages when narrow), and keeps page turning, zoom, fullscreen and an "open in new tab" link.
 `?page=5` opens it at a given page.

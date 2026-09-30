@@ -10,7 +10,15 @@ import { Modal } from "./ui/Modal";
 const noSubscribe = () => () => {};
 
 /** The public link for a flipbook, with Copy Link, Open and Embed on Website. */
-export function ShareLinkPanel({ slug, title }: { slug: string; title: string }) {
+export function ShareLinkPanel({
+  slug,
+  title,
+  thumbnailUrl,
+}: {
+  slug: string;
+  title: string;
+  thumbnailUrl: string | null;
+}) {
   // Built from the domain the app is served on (localhost, preview, production).
   const origin = useSyncExternalStore(noSubscribe, () => window.location.origin, () => "");
   const url = `${origin}/f/${slug}`;
@@ -65,7 +73,7 @@ export function ShareLinkPanel({ slug, title }: { slug: string; title: string })
       )}
       <Modal open={embedOpen} onClose={() => setEmbedOpen(false)} title="Embed this flipbook" size="lg">
         <p className="-mt-2 mb-4 truncate text-sm text-muted">{title}</p>
-        <EmbedPanel slug={slug} title={title} tone="light" />
+        <EmbedPanel slug={slug} title={title} thumbnailUrl={thumbnailUrl} tone="light" />
       </Modal>
     </section>
   );

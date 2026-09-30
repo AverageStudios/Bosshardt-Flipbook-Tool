@@ -1,9 +1,19 @@
 "use client";
 
 import { Check, Code2, Eye } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { copyText } from "@/lib/clipboard";
-import { DEFAULT_EMBED_SIZE, EMBED_ORIGIN, EMBED_SIZES, embedCode, embedUrl, type EmbedSize } from "@/lib/embed";
+import {
+  DEFAULT_EMBED_HEIGHT,
+  DEFAULT_EMBED_SIZE,
+  EMBED_ORIGIN,
+  EMBED_SIZES,
+  embedCode,
+  embedFrameHeight,
+  embedUrl,
+  FALLBACK_PAGE_ASPECT,
+  type EmbedSize,
+} from "@/lib/embed";
 import { useElementSize } from "./viewer/hooks";
 
 const noSubscribe = () => () => {};
@@ -33,8 +43,35 @@ const tones = {
   },
 };
 
+/** Page width / height, read from the cover thumbnail (a render of page 1). */
+function usePageAspect(thumbnailUrl: string | null) {
+  const [aspect, setAspect] = useState<number | null>(null);
+  useEffect(() => {
+    if (!thumbnailUrl) return;
+    const img = new Image();
+    img.onload = () => {
+      if (img.naturalWidth && img.naturalHeight) setAspect(img.naturalWidth / img.naturalHeight);
+    };
+    img.src = thumbnailUrl;
+    return () => {
+      img.onload = null;
+    };
+  }, [thumbnailUrl]);
+  return aspect ?? FALLBACK_PAGE_ASPECT;
+}
+
 /** Size options, the iframe snippet, Copy Embed Code and an on-demand preview. */
-export function EmbedPanel({ slug, title, tone }: { slug: string; title: string; tone: "light" | "dark" }) {
+export function EmbedPanel({
+  slug,
+  title,
+  thumbnailUrl,
+  tone,
+}: {
+  slug: string;
+  title: string;
+  thumbnailUrl: string | null;
+  tone: "light" | "dark";
+}) {
   // The preview frames the current site: a vercel.app page may not frame the production
   // domain (and vice versa), while the copied code always points at production.
   const origin = useSyncExternalStore(noSubscribe, () => window.location.origin, () => "");
@@ -42,11 +79,12 @@ export function EmbedPanel({ slug, title, tone }: { slug: string; title: string;
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const pageAspect = usePageAspect(thumbnailUrl);
   const t = tones[tone];
 
   const src = embedUrl(EMBED_ORIGIN, slug);
   const previewSrc = origin ? embedUrl(origin, slug) : "";
-  const code = embedCode({ src, title, size });
+  const code = embedCode({ src, title, size, pageAspect });
 
   async function handleCopy() {
     const ok = await copyText(code);
@@ -61,7 +99,7 @@ export function EmbedPanel({ slug, title, tone }: { slug: string; title: string;
     <section className="space-y-4">
       <fieldset>
         <legend className={`mb-2 text-xs font-medium tracking-wide uppercase ${t.muted}`}>Size</legend>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {(Object.keys(EMBED_SIZES) as EmbedSize[]).map((key) => {
             const option = EMBED_SIZES[key];
             const on = key === size;
@@ -81,8 +119,10 @@ export function EmbedPanel({ slug, title, tone }: { slug: string; title: string;
                   className="sr-only"
                 />
                 <span className="block text-sm font-medium">{option.label}</span>
-                <span className={`mt-0.5 block text-xs tabular-nums ${t.muted}`}>100% × {option.height}px</span>
-                {option.note && <span className={`mt-0.5 block text-[11px] ${t.muted}`}>{option.note}</span>}
+                <span className={`mt-0.5 block text-xs ${t.muted}`}>{option.note}</span>
+                <span className={`mt-0.5 block text-[11px] tabular-nums ${t.muted}`}>
+                  {key === "default" ? `100% wide × ${DEFAULT_EMBED_HEIGHT}px` : "100% wide, height fits the spread"}
+                </span>
               </label>
             );
           })}
@@ -103,8 +143,7 @@ export function EmbedPanel({ slug, title, tone }: { slug: string; title: string;
         type="button"
         autoFocus
         onClick={handleCopy}
-
-        className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg text-[15px] font-medium transition-colors disabled:opacity-50 ${t.primary}`}
+        className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg text-[15px] font-medium transition-colors ${t.primary}`}
       >
         {copied ? <Check className="size-4" /> : <Code2 className="size-4" />}
         {copied ? "Copied!" : "Copy Embed Code"}
@@ -116,7 +155,12 @@ export function EmbedPanel({ slug, title, tone }: { slug: string; title: string;
       <div>
         <p className={`mb-2 text-xs font-medium tracking-wide uppercase ${t.muted}`}>Preview</p>
         {showPreview && previewSrc ? (
-          <EmbedPreview src={previewSrc} title={title} height={EMBED_SIZES[size].height} frameClass={t.frame} />
+          <EmbedPreview
+            src={previewSrc}
+            title={title}
+            height={embedFrameHeight(size, pageAspect, PREVIEW_WIDTH)}
+            frameClass={t.frame}
+          />
         ) : (
           // Loaded on request so opening this panel doesn't download and render the PDF a second time.
           <button

@@ -12,10 +12,11 @@ interface ShareModalProps {
   onClose: () => void;
   slug: string;
   title: string;
+  thumbnailUrl: string | null;
 }
 
 /** Share dialog: the public link, plus an "Embed on Website" view with the iframe code. */
-export function ShareModal({ open, onClose, slug, title }: ShareModalProps) {
+export function ShareModal({ open, onClose, slug, title, thumbnailUrl }: ShareModalProps) {
   const [view, setView] = useState<"link" | "embed">("link");
   const embed = view === "embed";
 
@@ -30,7 +31,7 @@ export function ShareModal({ open, onClose, slug, title }: ShareModalProps) {
       {open && !embed && <LinkSection url={flipbookUrl(slug)} onEmbed={() => setView("embed")} />}
       {open && embed && (
         <>
-          <EmbedPanel slug={slug} title={title} tone="dark" />
+          <EmbedPanel slug={slug} title={title} thumbnailUrl={thumbnailUrl} tone="dark" />
           <button
             type="button"
             onClick={() => setView("link")}

@@ -77,7 +77,7 @@ export default async function FlipbookReadyPage({ params, searchParams }: Props)
           </Link>
         </div>
 
-        <ShareLinkPanel slug={flipbook.slug} title={flipbook.title} />
+        <ShareLinkPanel slug={flipbook.slug} title={flipbook.title} thumbnailUrl={flipbook.thumbnail_url} />
 
         <div className="relative mt-6 h-[460px] sm:h-[min(58vh,720px)] sm:min-h-[440px] overflow-hidden rounded-2xl border border-line bg-viewer shadow-card">
           <FlipbookViewer flipbook={flipbook} variant="preview" />
