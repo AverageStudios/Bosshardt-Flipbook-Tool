@@ -1,9 +1,10 @@
 "use client";
 
-import { Check, Copy, ExternalLink } from "lucide-react";
+import { ArrowLeft, Check, Code2, Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { copyText } from "@/lib/clipboard";
 import { flipbookUrl } from "@/lib/format";
+import { EmbedPanel } from "../EmbedPanel";
 import { Modal } from "../ui/Modal";
 
 interface ShareModalProps {
@@ -13,22 +14,37 @@ interface ShareModalProps {
   title: string;
 }
 
-/**
- * Share dialog. Each option is a self-contained section, so an "Embed" section
- * (e.g. an <iframe> snippet pointing at /f/[slug]) can be added alongside
- * the link section later without restructuring.
- */
+/** Share dialog: the public link, plus an "Embed on Website" view with the iframe code. */
 export function ShareModal({ open, onClose, slug, title }: ShareModalProps) {
+  const [view, setView] = useState<"link" | "embed">("link");
+  const embed = view === "embed";
+
+  function close() {
+    onClose();
+    setView("link");
+  }
+
   return (
-    <Modal open={open} onClose={onClose} title="Share" tone="dark">
+    <Modal open={open} onClose={close} title={embed ? "Embed this flipbook" : "Share"} tone="dark" size={embed ? "lg" : "md"}>
       <p className="-mt-2 mb-4 truncate text-sm text-white/50">{title}</p>
-      {open && <LinkSection url={flipbookUrl(slug)} />}
-      {/* Future: <EmbedSection url={url} /> */}
+      {open && !embed && <LinkSection url={flipbookUrl(slug)} onEmbed={() => setView("embed")} />}
+      {open && embed && (
+        <>
+          <EmbedPanel slug={slug} title={title} tone="dark" />
+          <button
+            type="button"
+            onClick={() => setView("link")}
+            className="mt-4 inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white"
+          >
+            <ArrowLeft className="size-4" /> Back to link
+          </button>
+        </>
+      )}
     </Modal>
   );
 }
 
-function LinkSection({ url }: { url: string }) {
+function LinkSection({ url, onEmbed }: { url: string; onEmbed: () => void }) {
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -68,6 +84,14 @@ function LinkSection({ url }: { url: string }) {
           <ExternalLink className="size-4" />
           Open in New Tab
         </a>
+        <button
+          type="button"
+          onClick={onEmbed}
+          className="col-span-2 inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/15 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+        >
+          <Code2 className="size-4" />
+          Embed on Website
+        </button>
       </div>
       {failed && <p className="text-xs text-amber-300">Couldn&apos;t copy automatically — select the link above and copy it.</p>}
     </section>

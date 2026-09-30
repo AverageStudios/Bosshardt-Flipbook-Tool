@@ -1,19 +1,22 @@
 "use client";
 
-import { Check, Copy, ExternalLink, Link2 } from "lucide-react";
+import { Check, Code2, Copy, ExternalLink, Link2 } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { copyText } from "@/lib/clipboard";
+import { EmbedPanel } from "./EmbedPanel";
 import { buttonClass } from "./ui/button";
+import { Modal } from "./ui/Modal";
 
 const noSubscribe = () => () => {};
 
-/** The public link for a flipbook, with Copy Link and Open buttons. */
-export function ShareLinkPanel({ slug }: { slug: string }) {
+/** The public link for a flipbook, with Copy Link, Open and Embed on Website. */
+export function ShareLinkPanel({ slug, title }: { slug: string; title: string }) {
   // Built from the domain the app is served on (localhost, preview, production).
   const origin = useSyncExternalStore(noSubscribe, () => window.location.origin, () => "");
   const url = `${origin}/f/${slug}`;
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [embedOpen, setEmbedOpen] = useState(false);
 
   async function handleCopy() {
     const ok = await copyText(url);
@@ -47,11 +50,23 @@ export function ShareLinkPanel({ slug }: { slug: string }) {
             <ExternalLink className="size-4" />
             Open flipbook
           </a>
+          <button
+            type="button"
+            onClick={() => setEmbedOpen(true)}
+            className={buttonClass("secondary", "lg", "col-span-2")}
+          >
+            <Code2 className="size-4" />
+            Embed on Website
+          </button>
         </div>
       </div>
       {failed && (
         <p className="mt-2 text-xs text-amber-700">Couldn&apos;t copy automatically — select the link above and copy it.</p>
       )}
+      <Modal open={embedOpen} onClose={() => setEmbedOpen(false)} title="Embed this flipbook" size="lg">
+        <p className="-mt-2 mb-4 truncate text-sm text-muted">{title}</p>
+        <EmbedPanel slug={slug} title={title} tone="light" />
+      </Modal>
     </section>
   );
 }

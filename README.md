@@ -8,6 +8,7 @@ Turn PDF brochures, offering memorandums and market reports into page-turning on
 - `/dashboard/recent`, `/dashboard/folder/[id]`: the Recent view and a single folder
 - `/new`: upload a PDF (drag & drop, preview, title)
 - `/f/[slug]`: the public viewer (no login needed)
+- `/embed/[slug]`: the same flipbook without any page chrome, for `<iframe>` embeds on other websites
 
 Built with Next.js (App Router), TypeScript, Tailwind CSS, PDF.js, page-flip, Supabase and Lucide.
 
@@ -37,6 +38,7 @@ cp .env.example .env.local   # never commit .env.local (it's gitignored)
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Project Settings → API Keys (`sb_publishable_…`) | Browser-safe; RLS blocks it from the table |
 | `SUPABASE_URL` | Same as the project URL | Used by server code |
 | `SUPABASE_SECRET_KEY` | Project Settings → API Keys (`sb_secret_…`) | **Server only.** Only read in `src/lib/supabase/server.ts`, guarded by `server-only` |
+| `EMBED_ALLOWED_ORIGINS` | Optional | Sites allowed to iframe a flipbook. Default: `https://bosshardtrealty.com https://*.bosshardtrealty.com`. See [Website embeds](#website-embeds) |
 
 On **Vercel**, add the same variables under Project → Settings → Environment Variables. Share links use
 the domain the app is opened on, so they work on previews and production without any extra setting.
@@ -70,6 +72,23 @@ With Docker running: `supabase start`. This project's CLI stack uses ports **545
   enabled with no public policies, so the public key can't read, list or change anything. PDFs are
   readable only via their unguessable URLs.
 
+## Website embeds
+
+**Share → Embed on Website** (in the viewer, or on a flipbook's dashboard page) gives an `<iframe>` snippet
+pointing at `/embed/[slug]`, in three heights (Responsive 700px, Compact 550px, Large 850px; always 100% wide).
+The embed uses the same record and PDF as `/f/[slug]`, fits itself to the iframe (two-page spread when
+wide enough, single pages when narrow), and keeps page turning, zoom, fullscreen and an "open in new tab" link.
+`?page=5` opens it at a given page.
+
+Framing is controlled in `next.config.ts` with a `Content-Security-Policy: frame-ancestors` header:
+
+- `/embed/*` and `/f/*`: only this app itself and the sites in `EMBED_ALLOWED_ORIGINS`.
+- Everything else (dashboard, uploads, API): `frame-ancestors 'none'` plus `X-Frame-Options: DENY`.
+
+If the Bosshardt website lives somewhere other than `bosshardtrealty.com` (or a subdomain), set
+`EMBED_ALLOWED_ORIGINS` in Vercel, e.g. `https://bosshardtrealty.com https://*.bosshardtrealty.com https://bosshardt.example.com`,
+and redeploy (headers are fixed at build time). An iframe on a site that isn't listed is blocked by the browser.
+
 ## Customising the brand
 
 - **Name, logo:** `src/lib/config.ts`. Set `logoSrc` (e.g. `/bosshardt-logo.svg` in `public/`) and the
@@ -85,6 +104,7 @@ src/
     dashboard/[slug]/     Preview + share page for a new flipbook
     new/                  Create a Flipbook (?folder=<id> files it on upload)
     f/[slug]/             Public viewer (+ not-found, error)
+    embed/[slug]/         Chrome-free viewer for website iframes (+ not-found, error)
     api/flipbooks/        prepare (signed upload URLs), create, rename, move, delete
     api/folders/          list, create, rename, delete
   components/

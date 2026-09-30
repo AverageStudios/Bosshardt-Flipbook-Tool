@@ -11,11 +11,19 @@ interface ModalProps {
   children: React.ReactNode;
   /** "dark" matches the flipbook viewer. */
   tone?: "light" | "dark";
+  /** "lg" for wider content such as the embed code and preview. */
+  size?: "md" | "lg";
 }
 
-export function Modal({ open, title, onClose, children, tone = "light" }: ModalProps) {
+export function Modal({ open, title, onClose, children, tone = "light", size = "md" }: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  // Callers often pass an inline onClose; reading it through a ref keeps the
+  // effect below from re-running (and stealing focus) on every parent render.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -23,7 +31,7 @@ export function Modal({ open, title, onClose, children, tone = "light" }: ModalP
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.stopPropagation();
-        onClose();
+        onCloseRef.current();
       }
     };
     window.addEventListener("keydown", onKey, true);
@@ -32,7 +40,7 @@ export function Modal({ open, title, onClose, children, tone = "light" }: ModalP
       window.removeEventListener("keydown", onKey, true);
       previous?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -52,7 +60,9 @@ export function Modal({ open, title, onClose, children, tone = "light" }: ModalP
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`relative w-full max-w-md rounded-2xl border p-5 shadow-2xl ${
+        className={`relative max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-2xl border p-5 shadow-2xl ${
+          size === "lg" ? "max-w-2xl" : "max-w-md"
+        } ${
           dark ? "border-white/10 bg-viewer-panel text-white" : "border-line bg-surface text-ink"
         }`}
       >
